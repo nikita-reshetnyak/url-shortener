@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"url-shortener/internal/config"
+	"url-shortener/internal/lib/logger/slg"
 	"url-shortener/internal/storage/sqlite"
 )
 
@@ -22,7 +23,7 @@ func main() {
 	log.Debug("logger debug mode is enabled")
 	stor, err := sqlite.New(cfg.StoragePath)
 	if err != nil {
-		fmt.Println(err)
+		log.Error("failed to initialize storage", slg.Err(err))
 	}
 	fmt.Println(stor)
 
