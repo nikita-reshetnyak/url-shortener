@@ -1,12 +1,16 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"url-shortener/internal/config"
 	"url-shortener/internal/lib/logger/slg"
 	"url-shortener/internal/storage/sqlite"
+
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
+	"github.com/go-openapi/runtime/middleware"
+	"github.com/gofiber/fiber/middleware"
 )
 
 const (
@@ -21,11 +25,15 @@ func main() {
 	log = log.With(slog.String("env", cfg.Env))
 	log.Info("initializing server", slog.String("address", cfg.Address))
 	log.Debug("logger debug mode is enabled")
-	stor, err := sqlite.New(cfg.StoragePath)
+	storage, err := sqlite.New(cfg.StoragePath)
 	if err != nil {
 		log.Error("failed to initialize storage", slg.Err(err))
 	}
-	fmt.Println(stor)
+	router := chi.NewRouter()
+	router.Use(middleware.RequestID)
+	router.Use(middleware.Logger)
+	router.Use(middleware.Recoverer)
+	router.Use(middleware.URLFormat)
 
 }
 func setupLogger(env string) *slog.Logger {
