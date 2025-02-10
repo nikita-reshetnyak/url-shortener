@@ -2,15 +2,15 @@ package main
 
 import (
 	"log/slog"
+	"net/http"
 	"os"
 	"url-shortener/internal/config"
+	"url-shortener/internal/http-server/handlers/url/save"
 	"url-shortener/internal/lib/logger/slg"
 	"url-shortener/internal/storage/sqlite"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/go-openapi/runtime/middleware"
-	"github.com/gofiber/fiber/middleware"
 )
 
 const (
@@ -34,7 +34,18 @@ func main() {
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
-
+	router.Post("/", save.New(log, storage))
+	server := &http.Server{
+		Addr:         cfg.Address,
+		Handler:      router,
+		ReadTimeout:  cfg.HttpServer.Timeout,
+		WriteTimeout: cfg.HttpServer.Timeout,
+		IdleTimeout:  cfg.IdleTimeout,
+	}
+	if err := server.ListenAndServe(); err != nil {
+		log.Error("failed to load server")
+	}
+	log.Info("server started")
 }
 func setupLogger(env string) *slog.Logger {
 	var log *slog.Logger
