@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"url-shortener/internal/config"
+	"url-shortener/internal/http-server/handlers/delete"
 	"url-shortener/internal/http-server/handlers/redirect"
 	"url-shortener/internal/http-server/handlers/url/save"
 	"url-shortener/internal/lib/logger/slg"
@@ -39,6 +40,7 @@ func main() {
 		r.Use(middleware.BasicAuth("url-shortener", map[string]string{
 			cfg.HTTPServer.User: cfg.HTTPServer.Password,
 		}))
+		r.Delete("/delete/{alias}", delete.New(log, storage))
 		r.Post("/", save.New(log, storage))
 	})
 	router.Get("/{alias}", redirect.New(log, storage))
