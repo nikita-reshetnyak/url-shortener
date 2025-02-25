@@ -1,0 +1,29 @@
+
+services:
+  url-shortener:
+    build:
+      context: .
+    container_name: url-shortener
+    ports:
+      - "8082:8082"
+    environment:
+      - ANALYTICS_GRPC_URL=analytics:44044
+      - CONFIG_PATH=./config/local.yaml
+    depends_on:
+      - analytics
+    networks:
+      - app-network
+
+  analytics:
+    image: 349071/analytics:latest
+    container_name: analytics
+    ports:
+      - "44044:44044"
+    environment:
+      - CONFIG_PATH=./cmd/config/local.yaml
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
