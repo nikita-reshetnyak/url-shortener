@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	analyticsgrpc "url-shortener/internal/clients/analytics/grpc"
 	"url-shortener/internal/config"
 	"url-shortener/internal/http-server/handlers/delete"
 	"url-shortener/internal/http-server/handlers/redirect"
@@ -27,6 +28,13 @@ func main() {
 	log = log.With(slog.String("env", cfg.Env))
 	log.Info("initializing server", slog.String("address", cfg.Address))
 	log.Debug("logger debug mode is enabled")
+	log.Info("connecting to analytics server", slog.String("address", cfg.Clients.Analytics.Address))
+	analyticsClient, err := analyticsgrpc.New(log, cfg.Clients.Analytics.Address)
+	if err != nil {
+		log.Error("failed to init analytics client", slg.Err(err))
+		os.Exit(1)
+	}
+	log.Info("Successfully connected to analytics server")
 	storage, err := sqlite.New(cfg.StoragePath)
 	if err != nil {
 		log.Error("failed to initialize storage", slg.Err(err))
@@ -40,10 +48,10 @@ func main() {
 		r.Use(middleware.BasicAuth("url-shortener", map[string]string{
 			cfg.HTTPServer.User: cfg.HTTPServer.Password,
 		}))
-		r.Delete("/delete/{alias}", delete.New(log, storage))
-		r.Post("/", save.New(log, storage))
+		r.Delete("/delete/{alias}", delete.New(log, storage, analyticsClient))
+		r.Post("/", save.New(log, storage, analyticsClient))
 	})
-	router.Get("/{alias}", redirect.New(log, storage))
+	router.Get("/{alias}", redirect.New(log, storage, analyticsClient))
 	server := &http.Server{
 		Addr:         cfg.Address,
 		Handler:      router,
