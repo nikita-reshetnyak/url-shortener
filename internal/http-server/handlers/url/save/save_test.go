@@ -33,11 +33,18 @@ func TestSaveHandler(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			urlSaverMock := mocks.NewUrlSaver(t)
+			analyticsServMock := mocks.NewAnalyticsServ(t)
+
 			if tc.respError == "" || tc.mockError != nil {
 				urlSaverMock.On("SaveUrl", tc.url, mock.AnythingOfType("string")).
 					Return(int64(1), tc.mockError).Once()
 			}
-			handler := save.New(slogdiscard.NewDiscardLogger(), urlSaverMock)
+
+			// Мокируем вызов SendEvent
+			analyticsServMock.On("SendEvent", mock.Anything, "SaveUrl", mock.Anything).
+				Return(nil).Once()
+
+			handler := save.New(slogdiscard.NewDiscardLogger(), urlSaverMock, analyticsServMock)
 			payload := fmt.Sprintf(`{"url": "%s", "alias": "%s"}`, tc.url, tc.alias)
 			req, err := http.NewRequest(http.MethodPost, "/save", bytes.NewReader([]byte(payload)))
 			require.NoError(t, err)
@@ -53,5 +60,4 @@ func TestSaveHandler(t *testing.T) {
 			require.Equal(t, tc.respError, resp.Error)
 		})
 	}
-
 }
