@@ -30,13 +30,13 @@ func TestRedirectHandler(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			urlGetterMock := mocks.NewUrlGetter(t)
-
+			analyticsServMock := mocks.NewAnalyticsServ(t)
 			if tc.respError == "" || tc.mockError != nil {
 				urlGetterMock.On("GetUrl", tc.alias).
 					Return(tc.url, tc.mockError).Once()
 			}
 			r := chi.NewRouter()
-			r.Get("/{alias}", redirect.New(slogdiscard.NewDiscardLogger(), urlGetterMock))
+			r.Get("/{alias}", redirect.New(slogdiscard.NewDiscardLogger(), urlGetterMock, analyticsServMock))
 			ts := httptest.NewServer(r)
 			defer ts.Close()
 			redirectedToUrl, err := api.GetRedirect(tc.url + "/" + tc.alias)

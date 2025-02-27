@@ -1,10 +1,12 @@
 package save
 
 import (
+	"context"
 	"errors"
 	"io"
 	"log/slog"
 	"net/http"
+	"time"
 	resp "url-shortener/internal/lib/api/response"
 	"url-shortener/internal/lib/logger/slg"
 	"url-shortener/internal/lib/random"
@@ -13,6 +15,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type Request struct {
@@ -24,9 +27,12 @@ type Response struct {
 	Alias string `json:"alias"`
 }
 
-//go:generate go run github.com/vektra/mockery/v2@v2.52.2 --name=UrlSaver
+//go:generate go run github.com/vektra/mockery/v2@v2.52.2 --name=UrlSaver --name=AnalyticsServ
 type UrlSaver interface {
 	SaveUrl(urlToSave, alias string) (int64, error)
+}
+type AnalyticsServ interface {
+	SendEvent(ctx context.Context, name string, date *timestamppb.Timestamp) error
 }
 
 func responseOk(w http.ResponseWriter, r *http.Request, alias string) {
@@ -38,15 +44,19 @@ func responseOk(w http.ResponseWriter, r *http.Request, alias string) {
 
 const aliasLength = 6
 
-func New(log *slog.Logger, urlSaver UrlSaver) http.HandlerFunc {
+func New(log *slog.Logger, urlSaver UrlSaver, analyticsServ AnalyticsServ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.url.save.New"
 		log = log.With(
 			slog.String("op", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
+		err := analyticsServ.SendEvent(context.Background(), "SaveUrl", timestamppb.New(time.Now()))
+		if err != nil {
+			log.Error("failed on send to analytics send event", slg.Err(err))
+		}
 		var req Request
-		err := render.DecodeJSON(r.Body, &req)
+		err = render.DecodeJSON(r.Body, &req)
 		if errors.Is(err, io.EOF) {
 			log.Error("request body is empty")
 			render.JSON(w, r, resp.Error("empty request"))

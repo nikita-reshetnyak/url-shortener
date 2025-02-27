@@ -9,7 +9,11 @@ require (
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/stretchr/testify v1.10.0
+	google.golang.org/grpc v1.70.0
+	google.golang.org/protobuf v1.36.5
 )
+
+require google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
 
 require (
 	github.com/BurntSushi/toml v1.4.0 // indirect
@@ -21,6 +25,7 @@ require (
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
+	github.com/nikita-reshetnyak/analytics-protos v1.0.0
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
